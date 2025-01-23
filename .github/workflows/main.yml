@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04  # Ensure the latest Ubuntu runner (24.04)
+    runs-on: ubuntu-24.04  # Using the latest Ubuntu runner (24.04)
 
     steps:
       - name: Checkout code
@@ -28,8 +28,7 @@ jobs:
           CC: x86_64-w64-mingw32-g++
 
       - name: Upload DLL as artifact
-        uses: actions/upload-artifact@v3  # Updated to v3 (latest version)
+        uses: actions/upload-artifact@v4  # Updated to v4 (latest version)
         with:
           name: example-dll
           path: example.dll
-
