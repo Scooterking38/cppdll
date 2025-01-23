@@ -1,0 +1,34 @@
+name: Build Windows DLL
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # GitHub Actions uses a Linux runner
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up MinGW (cross-compiler for Windows)
+      run: |
+        sudo apt update
+        sudo apt install -y mingw-w64  # Install MinGW
+
+    - name: Compile DLL
+      run: |
+        x86_64-w64-mingw32-g++ -shared -o example.dll example.cpp -Wl,--subsystem,windows
+      env:
+        CC: x86_64-w64-mingw32-g++
+
+    - name: Upload DLL as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: example-dll
+        path: example.dll
