@@ -3,18 +3,18 @@ name: Build Windows DLL
 on:
   push:
     branches:
-      - main
+      - main  # Trigger on pushes to the main branch
   pull_request:
     branches:
-      - main
+      - main  # Trigger on pull requests targeting the main branch
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Using Ubuntu (Linux) as the runner
+    runs-on: ubuntu-24.04  # Ensure the latest Ubuntu runner (24.04)
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2  # Checkout the code in the repository
+        uses: actions/checkout@v2  # Checkout the code
 
       - name: Install MinGW (cross-compiler for Windows)
         run: |
@@ -28,7 +28,8 @@ jobs:
           CC: x86_64-w64-mingw32-g++
 
       - name: Upload DLL as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3  # Updated to v3 (latest version)
         with:
           name: example-dll
           path: example.dll
+
