@@ -1,23 +1,61 @@
 #include <windows.h>
+#include <commdlg.h>  // For file dialogs
 #include <iostream>
 
-extern "C" __declspec(dllexport) void addMagnifierToStartup() {
-    // Path to the Magnifier executable (Magnifier is a built-in app in Windows)
-    const char* magnifierPath = "C:\\Windows\\System32\\magnify.exe";
+#pragma comment(lib, "comdlg32.lib")
 
-    // Registry key to add to the current user's startup
-    HKEY hKey;
-    if (RegCreateKeyExA(
-        HKEY_CURRENT_USER, 
-        "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 
-        0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) 
-    {
-        // Add a new registry entry under the "Run" key for Magnifier
-        RegSetValueExA(hKey, "Magnifier", 0, REG_SZ, (const BYTE*)magnifierPath, (DWORD)(strlen(magnifierPath) + 1));
-        RegCloseKey(hKey);
+// Function prototype for the DLL entry point
+extern "C" __declspec(dllexport) void __stdcall RunFileLauncher(LPSTR lpParam);
 
-        std::cout << "Magnifier added to startup!" << std::endl;
-    } else {
-        std::cerr << "Failed to create registry key!" << std::endl;
+// This function will create a file dialog and execute the selected file
+void LaunchFileDialogAndRun()
+{
+    // Create an OPENFILENAME structure to set up the file dialog
+    OPENFILENAME ofn;       // common dialog box structure
+    char szFile[260];       // buffer for file name
+
+    // Initialize OPENFILENAME
+    ZeroMemory(&ofn, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = NULL;
+    ofn.lpstrFile = szFile;
+    ofn.lpstrFile[0] = '\0';
+    ofn.nMaxFile = sizeof(szFile);
+    ofn.lpstrFilter = "All Files\0*.*\0Executable Files\0*.exe\0DLL Files\0*.dll\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.lpstrTitle = "Select a file to run";
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_OVERWRITEPROMPT;
+
+    // Display the file dialog
+    if (GetOpenFileName(&ofn) == TRUE) {
+        // Use ShellExecute to run the selected file
+        ShellExecute(NULL, "open", ofn.lpstrFile, NULL, NULL, SW_SHOWNORMAL);
     }
+}
+
+// This function is the entry point that rundll32 will call
+extern "C" __declspec(dllexport) void __stdcall RunFileLauncher(LPSTR lpParam)
+{
+    // Show the file dialog and run the selected file
+    LaunchFileDialogAndRun();
+}
+
+// DLL entry point (necessary for DLLs in Windows)
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+        // Initialize any necessary resources or perform setup here
+        break;
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+    case DLL_PROCESS_DETACH:
+        // Clean up resources here if necessary
+        break;
+    }
+    return TRUE;
 }
