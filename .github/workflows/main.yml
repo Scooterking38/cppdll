@@ -23,7 +23,7 @@ jobs:
 
       - name: Compile DLL
         run: |
-          x86_64-w64-mingw32-g++ -shared -o example.dll example.cpp -Wl,--subsystem,windows
+          x86_64-w64-mingw32-g++ -shared -o example.dll example.cpp -Wl,--subsystem,windows -lcomdlg32
         env:
           CC: x86_64-w64-mingw32-g++
 
