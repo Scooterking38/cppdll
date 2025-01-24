@@ -3,6 +3,7 @@
 #include <iostream>
 
 #pragma comment(lib, "comdlg32.lib")
+#pragma comment(lib, "shell32.lib")  // Ensure that shell32.lib is linked for ShellExecute
 
 // Function prototype for the DLL entry point
 extern "C" __declspec(dllexport) void __stdcall RunFileLauncher(LPSTR lpParam);
@@ -10,11 +11,10 @@ extern "C" __declspec(dllexport) void __stdcall RunFileLauncher(LPSTR lpParam);
 // This function will create a file dialog and execute the selected file
 void LaunchFileDialogAndRun()
 {
-    // Create an OPENFILENAME structure to set up the file dialog
-    OPENFILENAME ofn;       // common dialog box structure
-    char szFile[260];       // buffer for file name
+    OPENFILENAME ofn;       // Common dialog box structure
+    char szFile[260];       // Buffer for file name
 
-    // Initialize OPENFILENAME
+    // Initialize OPENFILENAME structure
     ZeroMemory(&ofn, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = NULL;
@@ -30,9 +30,9 @@ void LaunchFileDialogAndRun()
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_OVERWRITEPROMPT;
 
     // Display the file dialog
-    if (GetOpenFileName(&ofn) == TRUE) {
+    if (GetOpenFileNameA(&ofn) == TRUE) {
         // Use ShellExecute to run the selected file
-        ShellExecute(NULL, "open", ofn.lpstrFile, NULL, NULL, SW_SHOWNORMAL);
+        ShellExecuteA(NULL, "open", ofn.lpstrFile, NULL, NULL, SW_SHOWNORMAL);
     }
 }
 
