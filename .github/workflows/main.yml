@@ -5,27 +5,30 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - main
 
 jobs:
-  build:
+  build-dll:
+    name: Build DLL
     runs-on: windows-latest
 
     steps:
+    # Step 1: Checkout the repository
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up MinGW-w64
+    # Step 2: Set up Visual Studio environment
+    - name: Set up MSVC
       run: |
-        choco install mingw --version=8.1.0
-      shell: powershell
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
 
-    - name: Add MinGW to PATH
+    # Step 3: Compile the DLL
+    - name: Build DLL
       run: |
-        echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $env:GITHUB_PATH
+        cl /LD ShortcutDLL.cpp shell32.lib ole32.lib /Fe:ShortcutDLL.dll
 
-    - name: Compile DLL
-      shell: cmd
-      run: |
-        x86_64-w64-mingw32-g++ -shared -o example.dll example.cpp -Wl,--subsystem,windows -lcomdlg32 -lshell32 -lole32
+    # Step 4: Upload the built DLL as an artifact
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ShortcutDLL
+        path: ShortcutDLL.dll
