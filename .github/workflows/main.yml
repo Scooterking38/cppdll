@@ -16,10 +16,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Set up MSVC and compile the DLL
+    # Step 2: Locate MSVC and build DLL
     - name: Build DLL
       run: |
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat" && cl /LD ShortcutDLL.cpp shell32.lib ole32.lib /Fe:ShortcutDLL.dll
+        for /f "tokens=*" %%i in ('"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath') do set VS_PATH=%%i
+        call "%VS_PATH%\VC\Auxiliary\Build\vcvars64.bat"
+        cl /LD ShortcutDLL.cpp shell32.lib ole32.lib /Fe:ShortcutDLL.dll
       shell: cmd
 
     # Step 3: Upload the built DLL as an artifact
