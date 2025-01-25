@@ -1,7 +1,6 @@
 #include <windows.h>
 #include <string>
 #include <shlobj.h>
-#include <shobjidl_core.h>
 #include <shellapi.h>
 #include <atlbase.h>
 
