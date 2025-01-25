@@ -1,61 +1,70 @@
 #include <windows.h>
-#include <commdlg.h>  // For file dialogs
-#include <iostream>
+#include <string>
+#include <shlobj.h>
+#include <shobjidl_core.h>
+#include <shellapi.h>
+#include <atlbase.h>
 
-#pragma comment(lib, "comdlg32.lib")
-#pragma comment(lib, "shell32.lib")  // Ensure that shell32.lib is linked for ShellExecute
+#pragma comment(lib, "shell32.lib")
 
-// Function prototype for the DLL entry point
-extern "C" __declspec(dllexport) void __stdcall RunFileLauncher(LPSTR lpParam);
+// Entry point for rundll32
+extern "C" __declspec(dllexport) void RunCommand(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow) {
+    if (!lpszCmdLine || strlen(lpszCmdLine) == 0) {
+        MessageBoxA(NULL, "No command provided.", "Error", MB_OK | MB_ICONERROR);
+        return;
+    }
 
-// This function will create a file dialog and execute the selected file
-void LaunchFileDialogAndRun()
-{
-    OPENFILENAME ofn;       // Common dialog box structure
-    char szFile[260];       // Buffer for file name
+    // Get the current directory
+    char currentDir[MAX_PATH] = { 0 };
+    if (!GetModuleFileNameA(NULL, currentDir, MAX_PATH)) {
+        MessageBoxA(NULL, "Failed to get current directory.", "Error", MB_OK | MB_ICONERROR);
+        return;
+    }
 
-    // Initialize OPENFILENAME structure
-    ZeroMemory(&ofn, sizeof(ofn));
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = NULL;
-    ofn.lpstrFile = szFile;
-    ofn.lpstrFile[0] = '\0';
-    ofn.nMaxFile = sizeof(szFile);
-    ofn.lpstrFilter = "All Files\0*.*\0Executable Files\0*.exe\0DLL Files\0*.dll\0";
-    ofn.nFilterIndex = 1;
-    ofn.lpstrFileTitle = NULL;
-    ofn.nMaxFileTitle = 0;
-    ofn.lpstrInitialDir = NULL;
-    ofn.lpstrTitle = "Select a file to run";
-    ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_OVERWRITEPROMPT;
+    std::string dllPath = currentDir;
+    size_t lastSlash = dllPath.find_last_of("\\/");
+    if (lastSlash != std::string::npos) {
+        dllPath = dllPath.substr(0, lastSlash);
+    }
 
-    // Display the file dialog
-    if (GetOpenFileNameA(&ofn) == TRUE) {
-        // Use ShellExecute to run the selected file
-        ShellExecuteA(NULL, "open", ofn.lpstrFile, NULL, NULL, SW_SHOWNORMAL);
+    // Path to the shortcut
+    std::string shortcutPath = dllPath + "\\shortcut.lnk";
+
+    // Modify the shortcut to point to the specified command
+    HRESULT hres;
+    CComPtr<IShellLink> psl;
+    hres = CoInitialize(NULL);
+    if (SUCCEEDED(hres)) {
+        hres = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (void**)&psl);
+        if (SUCCEEDED(hres)) {
+            CComPtr<IPersistFile> ppf;
+            hres = psl->QueryInterface(IID_IPersistFile, (void**)&ppf);
+            if (SUCCEEDED(hres)) {
+                // Load the shortcut file
+                wchar_t wszShortcut[MAX_PATH];
+                MultiByteToWideChar(CP_ACP, 0, shortcutPath.c_str(), -1, wszShortcut, MAX_PATH);
+                hres = ppf->Load(wszShortcut, STGM_READWRITE);
+                if (SUCCEEDED(hres)) {
+                    // Set the new target path
+                    psl->SetPath(lpszCmdLine);
+
+                    // Save the changes
+                    hres = ppf->Save(wszShortcut, TRUE);
+                    if (SUCCEEDED(hres)) {
+                        // Execute the shortcut
+                        ShellExecuteA(NULL, "open", shortcutPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
+                    } else {
+                        MessageBoxA(NULL, "Failed to save the shortcut.", "Error", MB_OK | MB_ICONERROR);
+                    }
+                } else {
+                    MessageBoxA(NULL, "Failed to load the shortcut.", "Error", MB_OK | MB_ICONERROR);
+                }
+            }
+        }
+        CoUninitialize();
     }
 }
 
-// This function is the entry point that rundll32 will call
-extern "C" __declspec(dllexport) void __stdcall RunFileLauncher(LPSTR lpParam)
-{
-    // Show the file dialog and run the selected file
-    LaunchFileDialogAndRun();
-}
-
-// DLL entry point (necessary for DLLs in Windows)
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
-{
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_ATTACH:
-        // Initialize any necessary resources or perform setup here
-        break;
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
-    case DLL_PROCESS_DETACH:
-        // Clean up resources here if necessary
-        break;
-    }
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     return TRUE;
 }
