@@ -26,5 +26,6 @@ jobs:
         echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $env:GITHUB_PATH
 
     - name: Compile DLL
+      shell: cmd
       run: |
         x86_64-w64-mingw32-g++ -shared -o example.dll example.cpp -Wl,--subsystem,windows -lcomdlg32 -lshell32 -lole32
