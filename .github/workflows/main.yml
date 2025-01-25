@@ -19,7 +19,11 @@ jobs:
     - name: Set up MinGW-w64
       run: |
         choco install mingw --version=8.1.0
-        refreshenv
+      shell: powershell
+
+    - name: Add MinGW to PATH
+      run: |
+        echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $env:GITHUB_PATH
 
     - name: Compile DLL
       run: |
