@@ -1,34 +1,26 @@
-name: Build Windows DLL
+name: Build DLL
 
 on:
   push:
     branches:
-      - main  # Trigger on pushes to the main branch
+      - main
   pull_request:
     branches:
-      - main  # Trigger on pull requests targeting the main branch
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-24.04  # Using the latest Ubuntu runner (24.04)
+    runs-on: windows-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2  # Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Install MinGW (cross-compiler for Windows)
-        run: |
-          sudo apt update
-          sudo apt install -y mingw-w64  # Install MinGW for cross-compiling
+    - name: Set up MinGW-w64
+      run: |
+        choco install mingw --version=8.1.0
+        refreshenv
 
-      - name: Compile DLL
-        run: |
-          x86_64-w64-mingw32-g++ -shared -o example.dll example.cpp -Wl,--subsystem,windows -lcomdlg32 -lshell32 ole32.lib
-        env:
-          CC: x86_64-w64-mingw32-g++
-
-      - name: Upload DLL as artifact
-        uses: actions/upload-artifact@v4  # Updated to v4 (latest version)
-        with:
-          name: example-dll
-          path: example.dll 
+    - name: Compile DLL
+      run: |
+        x86_64-w64-mingw32-g++ -shared -o example.dll example.cpp -Wl,--subsystem,windows -lcomdlg32 -lshell32 -lole32
