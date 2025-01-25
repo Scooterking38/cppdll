@@ -16,17 +16,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # Step 2: Set up Visual Studio environment
-    - name: Set up MSVC
-      run: |
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
-
-    # Step 3: Compile the DLL
+    # Step 2: Set up MSVC and compile the DLL
     - name: Build DLL
       run: |
-        cl /LD ShortcutDLL.cpp shell32.lib ole32.lib /Fe:ShortcutDLL.dll
+        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat" && cl /LD ShortcutDLL.cpp shell32.lib ole32.lib /Fe:ShortcutDLL.dll
+      shell: cmd
 
-    # Step 4: Upload the built DLL as an artifact
+    # Step 3: Upload the built DLL as an artifact
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
