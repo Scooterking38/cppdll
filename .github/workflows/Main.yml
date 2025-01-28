@@ -24,4 +24,10 @@ jobs:
         cl.exe /LD main.cpp /Fe:RunCommand.dll shell32.lib atl.lib
         dir
       shell: cmd
+      
+    - name: Upload DLL as Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: RunCommand-dll
+        path: RunCommand.dll
 
