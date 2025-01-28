@@ -21,7 +21,7 @@ jobs:
 
     - name: Compile DLL
       run: |
-        cl.exe /LD main.cpp /Fe:RunCommand.dll shell32.lib atl.lib
+        cl.exe /LD main.cpp /Fe:RunCommand.dll shell32.lib 
         dir
       shell: cmd
       
