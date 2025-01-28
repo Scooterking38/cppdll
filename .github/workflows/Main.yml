@@ -1,0 +1,37 @@
+name: Build and Test Shortcut DLL
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build DLL
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install MinGW with Chocolatey
+      run: |
+        choco install mingw -y
+        echo "::add-path::C:\\tools\\mingw64\\bin"
+
+    - name: Verify g++ installation
+      run: g++ --version
+
+    - name: Compile DLL
+      run: |
+        g++ -shared -o ChangeShortcutDLL.dll ChangeShortcutDLL.cpp -lole32 -loleaut32 -lshell32
+
+    - name: Verify DLL exists
+      run: |
+        if not exist ChangeShortcutDLL.dll exit 1
+
+    - name: Display success message
+      run: echo "Compilation succeeded, ChangeShortcutDLL.dll created."
