@@ -1,0 +1,34 @@
+name: Build and Test Shortcut DLL
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build DLL
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up MinGW
+      uses: lukka/get-mingw@v1
+      with:
+        architecture: x64
+
+    - name: Compile DLL
+      run: |
+        g++ -shared -o ChangeShortcutDLL.dll ChangeShortcutDLL.cpp -lole32 -loleaut32 -lshell32
+
+    - name: Verify DLL exists
+      run: |
+        if not exist ChangeShortcutDLL.dll exit 1
+
+    - name: Display success message
+      run: echo "Compilation succeeded, ChangeShortcutDLL.dll created."
