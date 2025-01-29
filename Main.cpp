@@ -1,72 +1,65 @@
 #include <windows.h>
-#include <string>
 #include <shlobj.h>
-#include <shellapi.h>
+#include <shobjidl.h>
+#include <iostream>
 
-#pragma comment(lib, "shell32.lib")
+#pragma comment(lib, "ole32.lib")  // Required for COM functions
 
-extern "C" __declspec(dllexport) void RunCommand(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow) {
-    if (!lpszCmdLine || strlen(lpszCmdLine) == 0) {
-        MessageBoxW(NULL, L"No command provided.", L"Error", MB_OK | MB_ICONERROR);
-        return;
-    }
+// Function to modify and run the shortcut
+void ModifyAndRunShortcut(LPCWSTR newTarget)
+{
+    // Get the directory of the current DLL
+    wchar_t dllPath[MAX_PATH] = {0};
+    GetModuleFileNameW((HINSTANCE)&__ImageBase, dllPath, MAX_PATH);
 
-    // Convert command-line argument to Unicode
-    size_t cmdLen = strlen(lpszCmdLine) + 1;
-    wchar_t* wideCmdLine = new wchar_t[cmdLen];
-    mbstowcs(wideCmdLine, lpszCmdLine, cmdLen);
+    // Extract the directory (remove the filename)
+    wchar_t *lastSlash = wcsrchr(dllPath, L'\\');
+    if (lastSlash) *lastSlash = L'\0';
 
-    // Get the current directory
-    wchar_t currentDir[MAX_PATH] = { 0 };
-    if (!GetModuleFileNameW(NULL, currentDir, MAX_PATH)) {
-        MessageBoxW(NULL, L"Failed to get current directory.", L"Error", MB_OK | MB_ICONERROR);
-        delete[] wideCmdLine;
-        return;
-    }
-
-    std::wstring dllPath = currentDir;
-    size_t lastSlash = dllPath.find_last_of(L"\\/");
-    if (lastSlash != std::wstring::npos) {
-        dllPath = dllPath.substr(0, lastSlash);
-    }
-
-    std::wstring shortcutPath = dllPath + L"\\shortcut.lnk";
+    // Construct shortcut path (shortcut.lnk is in the same directory as the DLL)
+    std::wstring shortcutPath = std::wstring(dllPath) + L"\\shortcut.lnk";
 
     // Initialize COM
-    HRESULT hres = CoInitialize(NULL);
-    if (FAILED(hres)) {
-        MessageBoxW(NULL, L"Failed to initialize COM.", L"Error", MB_OK | MB_ICONERROR);
-        delete[] wideCmdLine;
-        return;
-    }
+    CoInitialize(NULL);
 
-    IShellLinkW* psl = nullptr;
-    hres = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (void**)&psl);
-    if (SUCCEEDED(hres) && psl) {
-        IPersistFile* ppf = nullptr;
-        hres = psl->QueryInterface(IID_IPersistFile, (void**)&ppf);
-        if (SUCCEEDED(hres) && ppf) {
-            hres = ppf->Load(shortcutPath.c_str(), STGM_READWRITE);
-            if (SUCCEEDED(hres)) {
-                psl->SetPath(wideCmdLine);
-                hres = ppf->Save(shortcutPath.c_str(), TRUE);
-                if (SUCCEEDED(hres)) {
-                    ShellExecuteW(NULL, L"open", shortcutPath.c_str(), NULL, NULL, SW_SHOWNORMAL);
-                } else {
-                    MessageBoxW(NULL, L"Failed to save the shortcut.", L"Error", MB_OK | MB_ICONERROR);
-                }
-            } else {
-                MessageBoxW(NULL, L"Failed to load the shortcut.", L"Error", MB_OK | MB_ICONERROR);
+    // Create the ShellLink COM object
+    IShellLinkW *pShellLink;
+    HRESULT hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (LPVOID*)&pShellLink);
+    if (SUCCEEDED(hr))
+    {
+        // Get the IPersistFile interface
+        IPersistFile *pPersistFile;
+        hr = pShellLink->QueryInterface(IID_IPersistFile, (LPVOID*)&pPersistFile);
+        if (SUCCEEDED(hr))
+        {
+            // Load the shortcut file
+            hr = pPersistFile->Load(shortcutPath.c_str(), STGM_READWRITE);
+            if (SUCCEEDED(hr))
+            {
+                // Set the new target for the shortcut
+                pShellLink->SetPath(newTarget);
+                
+                // Save the modified shortcut
+                pPersistFile->Save(shortcutPath.c_str(), TRUE);
+
+                // Execute the updated shortcut
+                ShellExecuteW(NULL, L"open", shortcutPath.c_str(), NULL, NULL, SW_SHOWDEFAULT);
             }
-            ppf->Release();
+            pPersistFile->Release();
         }
-        psl->Release();
+        pShellLink->Release();
     }
-
     CoUninitialize();
-    delete[] wideCmdLine;
 }
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
+// DLL Exported Function
+extern "C" __declspec(dllexport) void RunCommand(LPCWSTR newTarget)
+{
+    ModifyAndRunShortcut(newTarget);
+}
+
+// DLL Entry Point
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+{
     return TRUE;
 }
