@@ -4,6 +4,7 @@
 #include <iostream>
 
 #pragma comment(lib, "ole32.lib")  // Required for COM functions
+#pragma comment(lib, "shell32.lib")  // Required for ShellExecuteW
 
 // Function to modify and run the shortcut
 void ModifyAndRunShortcut(LPCWSTR newTarget)
