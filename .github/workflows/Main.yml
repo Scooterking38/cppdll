@@ -1,28 +1,43 @@
-name: Build ShortcutManager DLL
+name: Build DLL
 
 on:
   push:
     branches:
-      - main
+      - main   # Trigger the action on push to the main branch
   pull_request:
+    branches:
+      - main   # Trigger the action on pull requests to the main branch
 
 jobs:
   build:
-    runs-on: windows-latest
-
+    runs-on: windows-latest   # Use the latest Windows runner provided by GitHub Actions
+    
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Install MinGW
-        run: choco install mingw -y
-
-      - name: Compile DLL
-        run: |
-          gcc -shared -o ShortcutManager.dll ShortcutManager.cpp -lole32 -loleaut32 -luuid -mwindows
-
-      - name: Upload DLL
-        uses: actions/upload-artifact@v3
+      # Step 1: Checkout the repository's code
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      # Step 2: Set up .NET SDK (choose the version according to your needs)
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v2
         with:
-          name: ShortcutManager
-          path: ShortcutManager.dll
+          dotnet-version: '7.0'  # You can change this to your version of .NET
+
+      # Step 3: Restore the dependencies of your .NET project
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Step 4: Build the project to produce the DLL
+      - name: Build the DLL
+        run: dotnet build --configuration Release
+
+      # Step 5: Publish the DLL to the output folder
+      - name: Publish the DLL
+        run: dotnet publish --configuration Release --output ./output
+
+      # Step 6: Upload the compiled DLL as an artifact
+      - name: Upload DLL to Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: my-dll  # Artifact name
+          path: ./output  # Path where the DLL is saved
