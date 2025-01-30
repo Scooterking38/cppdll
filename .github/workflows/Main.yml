@@ -1,0 +1,28 @@
+name: Build ShortcutManager DLL
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install MinGW
+        run: choco install mingw -y
+
+      - name: Compile DLL
+        run: |
+          gcc -shared -o ShortcutManager.dll ShortcutManager.cpp -lole32 -loleaut32 -luuid -mwindows
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v3
+        with:
+          name: ShortcutManager
+          path: ShortcutManager.dll
